@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FOX-1D | Satellite Health & Planning Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #0a0a14;
+            --bg-card: rgba(20, 20, 40, 0.7);
+            --bg-card-hover: rgba(30, 30, 60, 0.8);
+            --border-subtle: rgba(139, 92, 246, 0.15);
+            --border-active: rgba(139, 92, 246, 0.4);
+            --purple-primary: #8b5cf6;
+            --purple-bright: #a78bfa;
+            --purple-glow: rgba(139, 92, 246, 0.3);
+            --purple-dim: rgba(139, 92, 246, 0.1);
+            --cyan-accent: #22d3ee;
+            --cyan-glow: rgba(34, 211, 238, 0.3);
+            --green-safe: #34d399;
+            --yellow-warn: #fbbf24;
+            --red-danger: #f87171;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --font-main: 'Inter', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-main);
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated background particles */
+        .bg-particles {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+        .particle {
+            position: absolute;
+            width: 2px; height: 2px;
+            background: var(--purple-primary);
+            border-radius: 50%;
+            opacity: 0;
+            animation: floatParticle 8s infinite ease-in-out;
+        }
+        @keyframes floatParticle {
+            0% { transform: translateY(100vh) scale(0); opacity: 0; }
+            10% { opacity: 0.6; }
+            90% { opacity: 0.6; }
+            100% { transform: translateY(-10vh) scale(1.5); opacity: 0; }
+        }
+
+        /* Layout */
+        .app-container {
+            position: relative;
+            z-index: 1;
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border-subtle);
+            margin-bottom: 24px;
+            animation: fadeInDown 0.6s ease-out;
+        }
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .brand-icon {
+            width: 48px; height: 48px;
+            background: linear-gradient(135deg, var(--purple-primary), #6366f1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 0 20px var(--purple-glow);
+            animation: pulseGlow 3s ease-in-out infinite;
+        }
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 20px var(--purple-glow); }
+            50% { box-shadow: 0 0 40px var(--purple-glow), 0 0 60px rgba(139,92,246,0.15); }
+        }
+        .brand-text h1 {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, var(--text-primary), var(--purple-bright));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .brand-text p {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 2px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: 1px solid var(--border-subtle);
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            font-family: var(--font-main);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--border-active);
+            color: var(--text-primary);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--purple-primary), #7c3aed);
+            border: none;
+            color: white;
+            box-shadow: 0 4px 15px var(--purple-glow);
+        }
+        .btn-primary:hover {
+            box-shadow: 0 6px 25px var(--purple-glow);
+            transform: translateY(-2px);
+        }
+
+        /* Time Control Bar */
+        .time-control-bar {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 20px 28px;
+            margin-bottom: 24px;
+            backdrop-filter: blur(20px);
+            animation: fadeInUp 0.6s ease-out 0.1s both;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .time-control-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .time-control-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .time-control-title .live-dot {
+            width: 8px; height: 8px;
+            background: var(--green-safe);
+            border-radius: 50%;
+            animation: livePulse 2s ease-in-out infinite;
+        }
+        @keyframes livePulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(52,211,153,0.4); }
+            50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(52,211,153,0); }
+        }
+        .sim-speed-controls {
+            display: flex;
+            gap: 6px;
+        }
+        .speed-btn {
+            padding: 6px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border-subtle);
+            background: transparent;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .speed-btn:hover { color: var(--text-secondary); border-color: var(--border-active); }
+        .speed-btn.active {
+            background: var(--purple-dim);
+            color: var(--purple-bright);
+            border-color: var(--purple-primary);
+            box-shadow: 0 0 10px var(--purple-glow);
+        }
+        .time-display-row {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+        .digital-clock {
+            font-family: var(--font-mono);
+            font-size: 42px;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: 2px;
+            min-width: 280px;
+            text-align: center;
+            background: linear-gradient(135deg, var(--text-primary), var(--purple-bright));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px var(--purple-glow);
+        }
+        .digital-clock .ms {
+            font-size: 20px;
+            color: var(--text-muted);
+            -webkit-text-fill-color: var(--text-muted);
+        }
+        .date-display {
+            font-size: 16px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        .mission-progress-mini {
+            flex: 1;
+            min-width: 200px;
+        }
+        .mission-progress-mini label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+            display: block;
+        }
+        .progress-track {
+            height: 6px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--purple-primary), var(--cyan-accent));
+            border-radius: 3px;
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            right: 0; top: -2px; bottom: -2px;
+            width: 2px;
+            background: white;
+            box-shadow: 0 0 10px var(--cyan-accent);
+        }
+        .play-controls {
+            display: flex;
+            gap: 8px;
+        }
+        .play-btn {
+            width: 44px; height: 44px;
+            border-radius: 12px;
+            border: 1px solid var(--border-subtle);
+            background: var(--bg-card);
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.2s;
+        }
+        .play-btn:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--purple-primary);
+            box-shadow: 0 0 15px var(--purple-glow);
+        }
+
+        /* Date Slider */
+        .date-slider-section {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border-subtle);
+        }
+        .date-slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        .date-slider-container {
+            position: relative;
+            height: 40px;
+            display: flex;
+            align-items: center;
+        }
+        .date-slider-track {
+            position: absolute;
+            left: 0; right: 0;
+            height: 4px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 2px;
+        }
+        .date-slider-fill {
+            position: absolute;
+            left: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--purple-primary), var(--cyan-accent));
+            border-radius: 2px;
+            transition: width 0.1s linear;
+        }
+        .date-slider-thumb {
+            position: absolute;
+            width: 20px; height: 20px;
+            background: var(--purple-primary);
+            border: 3px solid var(--bg-deep);
+            border-radius: 50%;
+            cursor: grab;
+            transform: translate(-50%, 0);
+            top: -8px;
+            box-shadow: 0 0 15px var(--purple-glow);
+            transition: transform 0.2s, box-shadow 0.2s;
+            z-index: 2;
+        }
+        .date-slider-thumb:hover {
+            transform: translate(-50%, 0) scale(1.3);
+            box-shadow: 0 0 25px var(--purple-glow);
+        }
+        .date-slider-thumb:active { cursor: grabbing; }
+        .date-slider-marks {
+            position: absolute;
+            left: 0; right: 0;
+            top: 20px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+        }
+
+        /* Calendar */
+
+        /* Main Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+        @media (max-width: 1200px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(20px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: fadeInUp 0.6s ease-out both;
+        }
+        .card:hover {
+            border-color: var(--border-active);
+            box-shadow: 0 8px 40px rgba(0,0,0,0.4), 0 0 20px var(--purple-glow);
+            transform: translateY(-2px);
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .card-title .icon {
+            width: 32px; height: 32px;
+            border-radius: 10px;
+            background: var(--purple-dim);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+        .card-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .badge-nominal { background: rgba(52,211,153,0.15); color: var(--green-safe); }
+        .badge-warn { background: rgba(251,191,36,0.15); color: var(--yellow-warn); }
+        .badge-danger { background: rgba(248,113,113,0.15); color: var(--red-danger); }
+
+        /* Health Score */
+        .health-score-container {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+        }
+        .health-ring {
+            position: relative;
+            width: 160px; height: 160px;
+            flex-shrink: 0;
+        }
+        .health-ring svg {
+            transform: rotate(-90deg);
+        }
+        .health-ring-bg {
+            fill: none;
+            stroke: rgba(255,255,255,0.05);
+            stroke-width: 10;
+        }
+        .health-ring-fill {
+            fill: none;
+            stroke-width: 10;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1);
+            filter: drop-shadow(0 0 8px var(--purple-glow));
+        }
+        .health-ring-text {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        .health-ring-value {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1;
+        }
+        .health-ring-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .health-metrics {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .health-metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 10px;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+        .health-metric:hover {
+            background: rgba(255,255,255,0.05);
+            border-color: var(--border-subtle);
+        }
+        .health-metric-name {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .health-metric-value {
+            font-family: var(--font-mono);
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        /* Risk Timeline */
+        .risk-timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+        .risk-timeline::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 0; bottom: 0;
+            width: 2px;
+            background: linear-gradient(180deg, var(--green-safe), var(--yellow-warn), var(--red-danger));
+            border-radius: 1px;
+        }
+        .risk-item {
+            position: relative;
+            padding: 16px 20px;
+            margin-bottom: 12px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            border: 1px solid transparent;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .risk-item:hover {
+            background: rgba(255,255,255,0.05);
+            border-color: var(--border-subtle);
+            transform: translateX(4px);
+        }
+        .risk-item::before {
+            content: '';
+            position: absolute;
+            left: -26px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            border: 2px solid var(--bg-deep);
+        }
+        .risk-item.low::before { background: var(--green-safe); box-shadow: 0 0 8px var(--green-safe); }
+        .risk-item.medium::before { background: var(--yellow-warn); box-shadow: 0 0 8px var(--yellow-warn); }
+        .risk-item.high::before { background: var(--red-danger); box-shadow: 0 0 8px var(--red-danger); }
+        .risk-date {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+        .risk-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+        .risk-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+        .risk-probability {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .risk-prob-low { background: rgba(52,211,153,0.15); color: var(--green-safe); }
+        .risk-prob-medium { background: rgba(251,191,36,0.15); color: var(--yellow-warn); }
+        .risk-prob-high { background: rgba(248,113,113,0.15); color: var(--red-danger); }
+
+        /* Connection Chart */
+        .connection-chart {
+            height: 200px;
+            position: relative;
+            margin-top: 10px;
+        }
+        .chart-svg {
+            width: 100%; height: 100%;
+        }
+        .chart-line {
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        .chart-area {
+            opacity: 0.15;
+        }
+        .chart-grid-line {
+            stroke: rgba(255,255,255,0.05);
+            stroke-width: 1;
+        }
+        .chart-label {
+            font-size: 10px;
+            fill: var(--text-muted);
+            font-family: var(--font-mono);
+        }
+        .connection-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .conn-stat {
+            text-align: center;
+            padding: 14px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 10px;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+        .conn-stat:hover {
+            border-color: var(--border-subtle);
+            background: rgba(255,255,255,0.05);
+        }
+        .conn-stat-value {
+            font-family: var(--font-mono);
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .conn-stat-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Planning Section */
+        .planning-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(20px);
+            animation: fadeInUp 0.6s ease-out 0.4s both;
+        }
+        .planning-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .plan-card {
+            padding: 20px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            border: 1px solid transparent;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .plan-card:hover {
+            border-color: var(--border-active);
+            background: rgba(255,255,255,0.05);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+        }
+        .plan-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+        .plan-card-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .plan-card-status {
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .plan-card-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 14px;
+        }
+        .plan-card-meta {
+            display: flex;
+            gap: 16px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        .plan-card-meta span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 30px 0;
+            color: var(--text-muted);
+            font-size: 12px;
+            border-top: 1px solid var(--border-subtle);
+            margin-top: 20px;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--border-active); }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .app-container { padding: 12px; }
+            .header { flex-direction: column; gap: 16px; }
+            .time-display-row { flex-direction: column; align-items: stretch; }
+            .digital-clock { font-size: 28px; min-width: auto; }
+            .health-score-container { flex-direction: column; }
+            .connection-stats { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background Particles -->
+    <div class="bg-particles" id="particles"></div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="brand">
+                <div class="brand-icon">🛰️</div>
+                <div class="brand-text">
+                    <h1>ANOMALY ZERO -  Mission Control</h1>
+                    <p>Satellite Health & Business Planning</p>
+                </div>
+            </div>
+
+        </header>
+
+        <!-- Time Control Bar -->
+        <div class="time-control-bar">
+            <div class="time-control-header">
+                <div class="time-control-title">
+                    <span class="live-dot"></span>
+                    Mission Timeline Simulation
+                </div>
+                <div class="sim-speed-controls">
+                    <button class="speed-btn" data-speed="0.5">0.5x</button>
+                    <button class="speed-btn active" data-speed="1">1x</button>
+                    <button class="speed-btn" data-speed="2">2x</button>
+                    <button class="speed-btn" data-speed="5">5x</button>
+                    <button class="speed-btn" data-speed="10">10x</button>
+                </div>
+            </div>
+            <div class="time-display-row">
+                <div class="digital-clock" id="digitalClock">00:00:00<span class="ms">.00</span></div>
+                <div class="date-display" id="dateDisplay">Loading...</div>
+                <div class="mission-progress-mini">
+                    <label>Mission Progress</label>
+                    <div class="progress-track">
+                        <div class="progress-fill" id="missionProgress" style="width: 6.5%"></div>
+                    </div>
+                </div>
+                <div class="play-controls">
+                    <button class="play-btn" id="playBtn">▶</button>
+                    <button class="play-btn" id="resetBtn">↺</button>
+                </div>
+            </div>
+            <div class="date-slider-section">
+                <div class="date-slider-label">
+                    <span>Mission Start: 2019-03-27</span>
+                    <span id="sliderCurrentDate">2019-03-27</span>
+                    <span>Projected EOL: 2024-01-24</span>
+                </div>
+                <div class="date-slider-container" id="dateSliderContainer">
+                    <div class="date-slider-track"></div>
+                    <div class="date-slider-fill" id="dateSliderFill" style="width: 0%"></div>
+                    <div class="date-slider-thumb" id="dateSliderThumb" style="left: 0%"></div>
+                    <div class="date-slider-marks">
+                        <span>Mar '19</span>
+                        <span>Jul '19</span>
+                        <span>Nov '19</span>
+                        <span>Mar '20</span>
+                        <span>Jul '20</span>
+                        <span>Nov '20</span>
+                        <span>Mar '21</span>
+                        <span>Jul '21</span>
+                        <span>Nov '21</span>
+                        <span>Mar '22</span>
+                        <span>Jul '22</span>
+                        <span>Nov '22</span>
+                        <span>Mar '23</span>
+                        <span>Jul '23</span>
+                        <span>Nov '23</span>
+                        <span>Jan '24</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Calendar -->
+        <div class="dashboard-grid">
+            <!-- Health Score Card -->
+            <div class="card" style="animation-delay: 0.25s">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="icon">💜</span>
+                        Satellite Health Index
+                    </div>
+                    <span class="card-badge" id="healthBadge">Nominal</span>
+                </div>
+                <div class="health-score-container">
+                    <div class="health-ring">
+                        <svg width="160" height="160" viewBox="0 0 160 160">
+                            <circle class="health-ring-bg" cx="80" cy="80" r="70"/>
+                            <circle class="health-ring-fill" id="healthRing" cx="80" cy="80" r="70"
+                                stroke="url(#healthGradient)" stroke-dasharray="440" stroke-dashoffset="22"/>
+                            <defs>
+                                <linearGradient id="healthGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#8b5cf6"/>
+                                    <stop offset="100%" style="stop-color:#22d3ee"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                        <div class="health-ring-text">
+                            <div class="health-ring-value" id="healthValue">95</div>
+                            <div class="health-ring-label">Health %</div>
+                        </div>
+                    </div>
+                    <div class="health-metrics">
+                        <div class="health-metric">
+                            <span class="health-metric-name">Cell Degradation</span>
+                            <span class="health-metric-value" id="cellDegradation" style="color: var(--yellow-warn)">4.5%</span>
+                        </div>
+                        <div class="health-metric">
+                            <span class="health-metric-name">Battery Voltage</span>
+                            <span class="health-metric-value" style="color: var(--green-safe)">3.72V</span>
+                        </div>
+                        <div class="health-metric">
+                            <span class="health-metric-name">Thermal Status</span>
+                            <span class="health-metric-value" style="color: var(--green-safe)">Normal</span>
+                        </div>
+                        <div class="health-metric">
+                            <span class="health-metric-name">Signal Strength</span>
+                            <span class="health-metric-value" style="color: var(--green-safe)">-85 dBm</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Risk Forecast Card -->
+            <div class="card" style="animation-delay: 0.3s">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="icon">⚠️</span>
+                        Risk Forecast
+                    </div>
+                    <span class="card-badge" id="riskBadge">Monitor</span>
+                </div>
+                <div class="risk-timeline">
+                    <div class="risk-item low">
+                        <div class="risk-date">2020-06-15</div>
+                        <div class="risk-title">Solar Panel Efficiency Drop</div>
+                        <div class="risk-desc">Expected 2-3% efficiency degradation due to radiation exposure.</div>
+                        <span class="risk-probability risk-prob-low">12% Probability</span>
+                    </div>
+                    <div class="risk-item medium">
+                        <div class="risk-date">2021-11-03</div>
+                        <div class="risk-title">Battery Capacity Warning</div>
+                        <div class="risk-desc">Battery capacity may drop below 80%. Consider power management review.</div>
+                        <span class="risk-probability risk-prob-medium">45% Probability</span>
+                    </div>
+                    <div class="risk-item high">
+                        <div class="risk-date">2023-08-20</div>
+                        <div class="risk-title">Silent Death Risk</div>
+                        <div class="risk-desc">Critical battery degradation. High probability of communication loss.</div>
+                        <span class="risk-probability risk-prob-high">78% Probability</span>
+                    </div>
+                    <div class="risk-item high">
+                        <div class="risk-date">2024-01-24</div>
+                        <div class="risk-title">Projected End of Life</div>
+                        <div class="risk-desc">Mission completion. Plan satellite replacement before this date.</div>
+                        <span class="risk-probability risk-prob-high">95% Probability</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Connection Drops Card -->
+            <div class="card" style="animation-delay: 0.35s">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="icon">📡</span>
+                        Connection Stability
+                    </div>
+                    <span class="card-badge" id="connBadge">Stable</span>
+                </div>
+                <div class="connection-chart">
+                    <svg class="chart-svg" id="connectionChart" viewBox="0 0 500 200" preserveAspectRatio="none">
+                        <g id="chartGrid"></g>
+                        <path class="chart-area" id="chartArea" fill="url(#chartGradient)"/>
+                        <path class="chart-line" id="chartLine" stroke="url(#chartLineGradient)"/>
+                        <defs>
+                            <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:0.3"/>
+                                <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:0"/>
+                            </linearGradient>
+                            <linearGradient id="chartLineGradient" x1="0" y1="0" x2="1" y2="0">
+                                <stop offset="0%" style="stop-color:#22d3ee"/>
+                                <stop offset="50%" style="stop-color:#8b5cf6"/>
+                                <stop offset="100%" style="stop-color:#f472b6"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <div class="connection-stats">
+                    <div class="conn-stat">
+                        <div class="conn-stat-value" style="color: var(--green-safe)">99.2%</div>
+                        <div class="conn-stat-label">Uptime</div>
+                    </div>
+                    <div class="conn-stat">
+                        <div class="conn-stat-value" style="color: var(--yellow-warn)">12</div>
+                        <div class="conn-stat-label">Drops (24h)</div>
+                    </div>
+                    <div class="conn-stat">
+                        <div class="conn-stat-value" style="color: var(--purple-bright)">2.3s</div>
+                        <div class="conn-stat-label">Avg Latency</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Business Planning Card -->
+            <div class="card" style="animation-delay: 0.4s">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="icon">📋</span>
+                        Business Impact
+                    </div>
+                    <span class="card-badge" id="busBadge">On Track</span>
+                </div>
+                <div class="health-metrics">
+                    <div class="health-metric">
+                        <span class="health-metric-name">Service Availability</span>
+                        <span class="health-metric-value" id="serviceAvailability" style="color: var(--green-safe)">99.7%</span>
+                    </div>
+                    <div class="health-metric">
+                        <span class="health-metric-name">Data Throughput</span>
+                        <span class="health-metric-value" style="color: var(--purple-bright)">1.2 Gbps</span>
+                    </div>
+                    <div class="health-metric">
+                        <span class="health-metric-name">Customer Uptime SLA</span>
+                        <span class="health-metric-value" style="color: var(--green-safe)">Met</span>
+                    </div>
+                    <div class="health-metric">
+                        <span class="health-metric-name">Replacement Budget</span>
+                        <span class="health-metric-value" style="color: var(--cyan-accent)">$450K</span>
+                    </div>
+                    <div class="health-metric">
+                        <span class="health-metric-name">Days Until EOL</span>
+                        <span class="health-metric-value" id="daysUntilEOL" style="color: var(--yellow-warn)">1773</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Planning Section -->
+        <div class="planning-section">
+            <div class="card-header" style="margin-bottom: 0;">
+                <div class="card-title">
+                    <span class="icon">🚀</span>
+                    Satellite Rental Planning
+                </div>
+                <button class="btn btn-primary">View All Plans</button>
+            </div>
+            <div class="planning-grid">
+                <div class="plan-card">
+                    <div class="plan-card-header">
+                        <div class="plan-card-title">Extend Current Mission</div>
+                        <span class="plan-card-status" style="background: rgba(52,211,153,0.15); color: var(--green-safe)">Recommended</span>
+                    </div>
+                    <div class="plan-card-desc">Negotiate mission extension for FOX-1D beyond projected EOL. Requires battery replacement assessment.</div>
+                    <div class="plan-card-meta">
+                        <span>💰 $120K/year</span>
+                        <span>📅 Until 2025</span>
+                    </div>
+                </div>
+                <div class="plan-card">
+                    <div class="plan-card-header">
+                        <div class="plan-card-title">Reserve FOX-1E Backup</div>
+                        <span class="plan-card-status" style="background: rgba(139,92,246,0.15); color: var(--purple-bright)">Available</span>
+                    </div>
+                    <div class="plan-card-desc">Pre-book FOX-1E as hot-standby satellite. Seamless failover with 99.99% uptime guarantee.</div>
+                    <div class="plan-card-meta">
+                        <span>💰 $85K/year</span>
+                        <span>📅 From 2024 Q1</span>
+                    </div>
+                </div>
+                <div class="plan-card">
+                    <div class="plan-card-header">
+                        <div class="plan-card-title">New LEO Constellation</div>
+                        <span class="plan-card-status" style="background: rgba(34,211,238,0.15); color: var(--cyan-accent)">Strategic</span>
+                    </div>
+                    <div class="plan-card-desc">Deploy 3-satellite LEO constellation for redundancy. Full global coverage with <50ms latency.</div>
+                    <div class="plan-card-meta">
+                        <span>💰 $2.1M setup</span>
+                        <span>📅 18 months</span>
+                    </div>
+                </div>
+                <div class="plan-card">
+                    <div class="plan-card-header">
+                        <div class="plan-card-title">Ground Station Upgrade</div>
+                        <span class="plan-card-status" style="background: rgba(251,191,36,0.15); color: var(--yellow-warn)">Pending</span>
+                    </div>
+                    <div class="plan-card-desc">Upgrade 2 ground stations for better signal capture. Reduces connection drops by 60%.</div>
+                    <div class="plan-card-meta">
+                        <span>💰 $340K</span>
+                        <span>📅 6 months</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            FOX-1D Digital Twin Platform · End-User Dashboard v2.0 · Data refreshed in real-time
+        </footer>
+    </div>
+
+    <script>
+        // ==================== PARTICLES ====================
+        function createParticles() {
+            const container = document.getElementById('particles');
+            for (let i = 0; i < 30; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.style.left = Math.random() * 100 + '%';
+                p.style.animationDelay = Math.random() * 8 + 's';
+                p.style.animationDuration = (6 + Math.random() * 6) + 's';
+                container.appendChild(p);
+            }
+        }
+        createParticles();
+
+        // ==================== MISSION DATES ====================
+        const MISSION_START = new Date('2019-03-27T00:00:00');
+        const MISSION_END = new Date('2024-01-24T00:00:00');
+        const MISSION_DAYS = Math.floor((MISSION_END - MISSION_START) / (1000 * 60 * 60 * 24));
+
+        // ==================== SIMULATION STATE ====================
+        let simState = {
+            currentDate: new Date(MISSION_START),
+            isPlaying: false,
+            speed: 1,
+            realSecondsPerSimDay: 48, // 48 real seconds = 1 sim day
+            lastFrameTime: 0,
+            accumulatedRealTime: 0
+        };
+
+        // ==================== DOM ELEMENTS ====================
+        const clockEl = document.getElementById('digitalClock');
+        const dateEl = document.getElementById('dateDisplay');
+        const playBtn = document.getElementById('playBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const progressEl = document.getElementById('missionProgress');
+        const sliderFill = document.getElementById('dateSliderFill');
+        const sliderThumb = document.getElementById('dateSliderThumb');
+        const sliderContainer = document.getElementById('dateSliderContainer');
+        const sliderCurrentDate = document.getElementById('sliderCurrentDate');
+        const healthValue = document.getElementById('healthValue');
+        const healthRing = document.getElementById('healthRing');
+        const daysUntilEOLEl = document.getElementById('daysUntilEOL');
+
+        // ==================== UTILITIES ====================
+        function formatDate(date) {
+            const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+            const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            return `${days[date.getDay()]}, ${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+        }
+
+        function formatTime(date) {
+            const h = String(date.getHours()).padStart(2, '0');
+            const m = String(date.getMinutes()).padStart(2, '0');
+            const s = String(date.getSeconds()).padStart(2, '0');
+            const ms = String(Math.floor(date.getMilliseconds() / 10)).padStart(2, '0');
+            return `${h}:${m}:${s}<span class="ms">.${ms}</span>`;
+        }
+
+        function getMissionProgress() {
+            const elapsed = simState.currentDate - MISSION_START;
+            const total = MISSION_END - MISSION_START;
+            return Math.min(100, Math.max(0, (elapsed / total) * 100));
+        }
+
+        function getHealthScore() {
+            const progress = getMissionProgress();
+            // Health degrades aggressively toward EOL
+            // At 0% progress: ~95-100%, At 100% progress: ~2-8%
+            const baseHealth = 100;
+            // Exponential degradation - starts slow, accelerates near EOL
+            const degradation = Math.pow(progress / 100, 0.6) * 92;
+            const noise = (Math.sin(Date.now() / 2000) * 1.5);
+            return Math.max(0, Math.min(100, baseHealth - degradation + noise));
+        }
+
+        function getDaysUntilEOL() {
+            return Math.max(0, Math.ceil((MISSION_END - simState.currentDate) / (1000 * 60 * 60 * 24)));
+        }
+
+        // ==================== UPDATE DISPLAY ====================
+        function updateDisplay() {
+            clockEl.innerHTML = formatTime(simState.currentDate);
+            dateEl.textContent = formatDate(simState.currentDate);
+
+            const progress = getMissionProgress();
+            progressEl.style.width = progress + '%';
+
+            const sliderPercent = progress;
+            sliderFill.style.width = sliderPercent + '%';
+            sliderThumb.style.left = sliderPercent + '%';
+            sliderCurrentDate.textContent = simState.currentDate.toISOString().split('T')[0];
+
+            const health = getHealthScore();
+            healthValue.textContent = health.toFixed(1);
+            const circumference = 440;
+            const offset = circumference - (health / 100) * circumference;
+            healthRing.style.strokeDashoffset = offset;
+
+            // Update badges based on health
+            const healthBadge = document.getElementById('healthBadge');
+            const riskBadge = document.getElementById('riskBadge');
+            if (healthBadge) {
+                if (health > 75) { healthBadge.textContent = 'Nominal'; healthBadge.className = 'card-badge badge-nominal'; }
+                else if (health > 40) { healthBadge.textContent = 'Monitor'; healthBadge.className = 'card-badge badge-warn'; }
+                else { healthBadge.textContent = 'Critical'; healthBadge.className = 'card-badge badge-danger'; }
+            }
+            if (riskBadge) {
+                if (health > 75) { riskBadge.textContent = 'Low Risk'; riskBadge.className = 'card-badge badge-nominal'; }
+                else if (health > 40) { riskBadge.textContent = 'Monitor'; riskBadge.className = 'card-badge badge-warn'; }
+                else { riskBadge.textContent = 'High Risk'; riskBadge.className = 'card-badge badge-danger'; }
+            }
+
+            const connBadge = document.getElementById('connBadge');
+            const busBadge = document.getElementById('busBadge');
+            if (connBadge) {
+                if (health > 75) { connBadge.textContent = 'Stable'; connBadge.className = 'card-badge badge-nominal'; }
+                else if (health > 40) { connBadge.textContent = 'Degraded'; connBadge.className = 'card-badge badge-warn'; }
+                else { connBadge.textContent = 'Unstable'; connBadge.className = 'card-badge badge-danger'; }
+            }
+            if (busBadge) {
+                if (health > 75) { busBadge.textContent = 'On Track'; busBadge.className = 'card-badge badge-nominal'; }
+                else if (health > 40) { busBadge.textContent = 'At Risk'; busBadge.className = 'card-badge badge-warn'; }
+                else { busBadge.textContent = 'Critical'; busBadge.className = 'card-badge badge-danger'; }
+            }
+
+            // Color change based on health
+            if (health > 75) {
+                healthRing.setAttribute('stroke', 'url(#healthGradient)');
+            } else if (health > 40) {
+                healthRing.setAttribute('stroke', '#fbbf24');
+            } else {
+                healthRing.setAttribute('stroke', '#f87171');
+            }
+
+            daysUntilEOLEl.textContent = getDaysUntilEOL();
+
+            // Update cell degradation - grows from ~4% to ~98% over mission
+            const cellDegEl = document.getElementById('cellDegradation');
+            if (cellDegEl) {
+                const cellDeg = 4.5 + (progress / 100) * 93.5;
+                cellDegEl.textContent = cellDeg.toFixed(1) + '%';
+                if (cellDeg > 70) cellDegEl.style.color = 'var(--red-danger)';
+                else if (cellDeg > 40) cellDegEl.style.color = 'var(--yellow-warn)';
+            }
+
+            // Update service availability - drops from 99.7% to ~18% over mission
+            const svcEl = document.getElementById('serviceAvailability');
+            if (svcEl) {
+                const svcAvail = 99.7 - (progress / 100) * 81.7;
+                svcEl.textContent = svcAvail.toFixed(1) + '%';
+                if (svcAvail < 50) svcEl.style.color = 'var(--red-danger)';
+                else if (svcAvail < 80) svcEl.style.color = 'var(--yellow-warn)';
+                else svcEl.style.color = 'var(--green-safe)';
+            }
+
+            // Update calendar selection
+            
+        }
+
+        // ==================== SIMULATION LOOP ====================
+        function gameLoop(timestamp) {
+            if (!simState.lastFrameTime) simState.lastFrameTime = timestamp;
+            const deltaTime = timestamp - simState.lastFrameTime;
+            simState.lastFrameTime = timestamp;
+
+            if (simState.isPlaying) {
+                // 48 real seconds = 1 simulated day
+                const simDayDuration = simState.realSecondsPerSimDay * 1000 / simState.speed;
+                const simMsPerRealMs = (24 * 60 * 60 * 1000) / simDayDuration;
+                const simDelta = deltaTime * simMsPerRealMs;
+
+                simState.currentDate = new Date(simState.currentDate.getTime() + simDelta);
+
+                if (simState.currentDate >= MISSION_END) {
+                    simState.currentDate = new Date(MISSION_END);
+                    simState.isPlaying = false;
+                    playBtn.textContent = '▶';
+                }
+            }
+
+            updateDisplay();
+            updateChart();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // ==================== CONTROLS ====================
+        playBtn.addEventListener('click', () => {
+            simState.isPlaying = !simState.isPlaying;
+            playBtn.textContent = simState.isPlaying ? '⏸' : '▶';
+        });
+
+        resetBtn.addEventListener('click', () => {
+            simState.isPlaying = false;
+            simState.currentDate = new Date(MISSION_START);
+            playBtn.textContent = '▶';
+            updateDisplay();
+        });
+
+        document.querySelectorAll('.speed-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                simState.speed = parseFloat(btn.dataset.speed);
+            });
+        });
+
+        // ==================== SLIDER ====================
+        let isDragging = false;
+
+        function handleSliderMove(clientX) {
+            const rect = sliderContainer.getBoundingClientRect();
+            const percent = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
+            const totalMs = MISSION_END - MISSION_START;
+            const targetMs = MISSION_START.getTime() + (percent / 100) * totalMs;
+            simState.currentDate = new Date(targetMs);
+            updateDisplay();
+        }
+
+        sliderThumb.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            simState.isPlaying = false;
+            playBtn.textContent = '▶';
+            e.preventDefault();
+        });
+
+        sliderContainer.addEventListener('mousedown', (e) => {
+            if (e.target !== sliderThumb) {
+                isDragging = true;
+                simState.isPlaying = false;
+                playBtn.textContent = '▶';
+                handleSliderMove(e.clientX);
+            }
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (isDragging) handleSliderMove(e.clientX);
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        // Touch support
+        sliderThumb.addEventListener('touchstart', (e) => {
+            isDragging = true;
+            simState.isPlaying = false;
+            playBtn.textContent = '▶';
+            e.preventDefault();
+        });
+
+        sliderContainer.addEventListener('touchstart', (e) => {
+            if (e.target !== sliderThumb) {
+                isDragging = true;
+                simState.isPlaying = false;
+                playBtn.textContent = '▶';
+                handleSliderMove(e.touches[0].clientX);
+            }
+        });
+
+        document.addEventListener('touchmove', (e) => {
+            if (isDragging) handleSliderMove(e.touches[0].clientX);
+        });
+
+        document.addEventListener('touchend', () => {
+            isDragging = false;
+        });
+
+        // ==================== CONNECTION CHART ====================
+        let chartData = [];
+        const chartPoints = 50;
+
+        function generateChartData() {
+            chartData = [];
+            let value = 85;
+            for (let i = 0; i < chartPoints; i++) {
+                value += (Math.random() - 0.5) * 10;
+                value = Math.max(40, Math.min(100, value));
+                chartData.push(value);
+            }
+        }
+        generateChartData();
+
+        function updateChart() {
+            // Shift data and add new point based on health
+            const health = getHealthScore();
+            chartData.shift();
+            const noise = (Math.random() - 0.5) * 8;
+            chartData.push(Math.max(30, Math.min(100, health + noise)));
+
+            const svg = document.getElementById('connectionChart');
+            const width = 500;
+            const height = 200;
+            const padding = 20;
+
+            // Grid lines
+            const gridGroup = document.getElementById('chartGrid');
+            if (!gridGroup.innerHTML) {
+                for (let i = 0; i <= 4; i++) {
+                    const y = padding + (height - 2 * padding) * (i / 4);
+                    gridGroup.innerHTML += `<line class="chart-grid-line" x1="${padding}" y1="${y}" x2="${width - padding}" y2="${y}"/>`;
+                    gridGroup.innerHTML += `<text class="chart-label" x="${padding - 5}" y="${y + 3}" text-anchor="end">${100 - i * 25}%</text>`;
+                }
+            }
+
+            // Line path
+            const xStep = (width - 2 * padding) / (chartPoints - 1);
+            let pathD = `M ${padding} ${height - padding - (chartData[0] / 100) * (height - 2 * padding)}`;
+            let areaD = `M ${padding} ${height - padding} L ${padding} ${height - padding - (chartData[0] / 100) * (height - 2 * padding)}`;
+
+            for (let i = 1; i < chartPoints; i++) {
+                const x = padding + i * xStep;
+                const y = height - padding - (chartData[i] / 100) * (height - 2 * padding);
+                pathD += ` L ${x} ${y}`;
+                areaD += ` L ${x} ${y}`;
+            }
+
+            areaD += ` L ${width - padding} ${height - padding} Z`;
+
+            document.getElementById('chartLine').setAttribute('d', pathD);
+            document.getElementById('chartArea').setAttribute('d', areaD);
+        }
+
+        // ==================== INIT ====================
+        updateDisplay();
+        updateChart();
+        requestAnimationFrame(gameLoop);
+
+        // Update chart every 100ms for smooth animation
+        setInterval(updateChart, 100);
+    </script>
+</body>
+</html>

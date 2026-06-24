@@ -1,0 +1,1626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anomaly ZERO | Satellite Health Tracking Solution</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --deep-purple: #0d001a;
+  --dark-purple: #1a0a2e;
+  --mid-purple: #2d1b4e;
+  --light-purple: #4a2d7a;
+  --bright-purple: #7c3aed;
+  --neon-purple: #a855f7;
+  --glow-purple: rgba(168, 85, 247, 0.4);
+  --soft-purple: #c084fc;
+  --lavender: #e9d5ff;
+  --text-white: #f3e8ff;
+  --text-dim: #a78bfa;
+  --accent-cyan: #22d3ee;
+  --accent-glow-cyan: rgba(34, 211, 238, 0.3);
+  --ok: #4ade80;
+  --warn: #fbbf24;
+  --alarm: #f87171;
+  --glass: rgba(26, 10, 46, 0.7);
+  --glass-border: rgba(168, 85, 247, 0.15);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--deep-purple);
+  color: var(--text-white);
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ─── STARFIELD CANVAS ─── */
+#starfield {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ─── SCANLINE OVERLAY ─── */
+.scanlines {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.03;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(168, 85, 247, 0.1) 2px,
+    rgba(168, 85, 247, 0.1) 4px
+  );
+}
+
+/* ─── GLASS CARD BASE ─── */
+.glass-card {
+  background: var(--glass);
+  backdrop-filter: blur(20px) saturate(1.5);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(168,85,247,0.08), transparent);
+  transition: left 0.6s ease;
+}
+
+.glass-card:hover::before {
+  left: 100%;
+}
+
+.glass-card:hover {
+  border-color: rgba(168, 85, 247, 0.4);
+  box-shadow: 0 12px 48px rgba(168, 85, 247, 0.15), inset 0 1px 0 rgba(255,255,255,0.08);
+  transform: translateY(-3px);
+}
+
+/* ─── HEADER ─── */
+.header {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 40px;
+  border-bottom: 1px solid rgba(168, 85, 247, 0.1);
+  background: linear-gradient(180deg, rgba(13,0,26,0.9) 0%, transparent 100%);
+}
+
+.logo-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.logo-icon {
+  width: 48px; height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--bright-purple), var(--neon-purple));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  box-shadow: 0 0 20px var(--glow-purple);
+  animation: logoPulse 3s ease-in-out infinite;
+}
+
+@keyframes logoPulse {
+  0%, 100% { box-shadow: 0 0 20px var(--glow-purple); }
+  50% { box-shadow: 0 0 35px var(--glow-purple), 0 0 50px rgba(168,85,247,0.2); }
+}
+
+.logo-text h1 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  background: linear-gradient(135deg, var(--soft-purple), var(--neon-purple), var(--accent-cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: none;
+}
+
+.logo-sub {
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.nav-links {
+  display: flex;
+  gap: 8px;
+}
+
+.nav-btn {
+  padding: 10px 24px;
+  border-radius: 12px;
+  border: 1px solid rgba(168, 85, 247, 0.2);
+  background: rgba(168, 85, 247, 0.05);
+  color: var(--text-dim);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  letter-spacing: 0.5px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nav-btn:hover, .nav-btn.active {
+  background: rgba(168, 85, 247, 0.15);
+  border-color: var(--neon-purple);
+  color: var(--soft-purple);
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.2);
+}
+
+.nav-btn.active {
+  background: linear-gradient(135deg, rgba(168,85,247,0.2), rgba(34,211,238,0.1));
+  border-color: var(--accent-cyan);
+}
+
+/* ─── HERO SECTION ─── */
+.hero {
+  position: relative;
+  z-index: 5;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 60px 24px;
+  overflow: hidden;
+}
+
+.hero-bg-video {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  opacity: 0.4;
+  z-index: -1;
+}
+
+.hero-overlay {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: radial-gradient(ellipse at center, transparent 0%, var(--deep-purple) 70%);
+  z-index: -1;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 900px;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  border-radius: 50px;
+  background: rgba(168, 85, 247, 0.1);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  font-size: 12px;
+  color: var(--soft-purple);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 32px;
+  animation: fadeInUp 0.8s ease;
+}
+
+.hero-badge .dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--ok);
+  box-shadow: 0 0 8px var(--ok);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+.hero-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(48px, 10vw, 96px);
+  font-weight: 900;
+  letter-spacing: 8px;
+  line-height: 1.1;
+  margin-bottom: 16px;
+  animation: fadeInUp 1s ease 0.2s both;
+}
+
+.hero-title .gradient-text {
+  background: linear-gradient(135deg, var(--lavender) 0%, var(--soft-purple) 30%, var(--neon-purple) 60%, var(--accent-cyan) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 30px rgba(168,85,247,0.3));
+}
+
+.hero-subtitle {
+  font-size: 18px;
+  color: var(--text-dim);
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  margin-bottom: 48px;
+  animation: fadeInUp 1s ease 0.4s both;
+}
+
+.hero-desc {
+  font-size: 16px;
+  color: rgba(243, 232, 255, 0.7);
+  line-height: 1.8;
+  max-width: 600px;
+  margin: 0 auto 48px;
+  animation: fadeInUp 1s ease 0.6s both;
+}
+
+.hero-cta {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  animation: fadeInUp 1s ease 0.8s both;
+}
+
+.btn-primary {
+  padding: 16px 40px;
+  border-radius: 14px;
+  border: none;
+  background: linear-gradient(135deg, var(--bright-purple), var(--neon-purple));
+  color: white;
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 20px rgba(168, 85, 247, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.btn-primary:hover::after {
+  left: 100%;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(168, 85, 247, 0.6);
+}
+
+.btn-secondary {
+  padding: 16px 40px;
+  border-radius: 14px;
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  background: transparent;
+  color: var(--soft-purple);
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  letter-spacing: 1px;
+}
+
+.btn-secondary:hover {
+  background: rgba(168, 85, 247, 0.1);
+  border-color: var(--neon-purple);
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.2);
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── SCROLL INDICATOR ─── */
+.scroll-indicator {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  animation: bounce 2s infinite;
+  z-index: 2;
+}
+
+.scroll-indicator span {
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+.scroll-arrow {
+  width: 24px; height: 24px;
+  border-right: 2px solid var(--neon-purple);
+  border-bottom: 2px solid var(--neon-purple);
+  transform: rotate(45deg);
+  animation: scrollPulse 2s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(10px); }
+}
+
+@keyframes scrollPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ─── DASHBOARD SECTION ─── */
+.dashboard-section {
+  position: relative;
+  z-index: 5;
+  padding: 80px 40px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 60px;
+}
+
+.section-label {
+  display: inline-block;
+  padding: 6px 16px;
+  border-radius: 50px;
+  background: rgba(168, 85, 247, 0.1);
+  border: 1px solid rgba(168, 85, 247, 0.2);
+  font-size: 12px;
+  color: var(--soft-purple);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.section-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  margin-bottom: 12px;
+}
+
+.section-title .gradient-text {
+  background: linear-gradient(135deg, var(--lavender), var(--soft-purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.section-desc {
+  color: var(--text-dim);
+  font-size: 16px;
+  max-width: 500px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+/* ─── DASHBOARD GRID ─── */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 24px;
+  margin-bottom: 40px;
+}
+
+/* Video Card */
+.video-card {
+  padding: 0;
+  min-height: 500px;
+  display: flex;
+  flex-direction: column;
+}
+
+.video-card-header {
+  padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(168, 85, 247, 0.1);
+}
+
+.video-card-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  color: var(--soft-purple);
+}
+
+.video-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: rgba(74, 222, 128, 0.1);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  font-size: 11px;
+  color: var(--ok);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.video-badge .live-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--ok);
+  animation: pulse 1.5s infinite;
+}
+
+.video-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  border-radius: 0 0 20px 20px;
+}
+
+.video-container video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.video-overlay {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.video-info {
+  padding: 8px 16px;
+  border-radius: 10px;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(10px);
+  font-size: 12px;
+  color: var(--text-dim);
+  border: 1px solid rgba(168,85,247,0.1);
+}
+
+/* Analytics Card */
+.analytics-card {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.analytics-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.analytics-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  color: var(--soft-purple);
+}
+
+.confidence-badge {
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: rgba(168, 85, 247, 0.1);
+  border: 1px solid rgba(168, 85, 247, 0.2);
+  font-size: 12px;
+  color: var(--soft-purple);
+  font-family: 'Courier New', monospace;
+}
+
+/* Status Box */
+.status-box {
+  padding: 32px;
+  border-radius: 16px;
+  text-align: center;
+  border: 1px solid rgba(74, 222, 128, 0.2);
+  background: rgba(74, 222, 128, 0.03);
+  transition: all 0.5s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.status-box::before {
+  content: '';
+  position: absolute;
+  top: -50%; left: -50%;
+  width: 200%; height: 200%;
+  background: radial-gradient(circle, rgba(74,222,128,0.05) 0%, transparent 70%);
+  animation: statusRotate 8s linear infinite;
+}
+
+@keyframes statusRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.status-box.fire {
+  border-color: rgba(248, 113, 113, 0.4);
+  background: rgba(248, 113, 113, 0.05);
+  animation: firePulse 2s ease-in-out infinite;
+}
+
+.status-box.fire::before {
+  background: radial-gradient(circle, rgba(248,113,113,0.08) 0%, transparent 70%);
+}
+
+@keyframes firePulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(248,113,113,0.1); }
+  50% { box-shadow: 0 0 40px rgba(248,113,113,0.3); }
+}
+
+.status-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+.status-text {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+  position: relative;
+  z-index: 1;
+}
+
+.status-box.safe .status-text { color: var(--ok); }
+.status-box.fire .status-text { color: var(--alarm); }
+
+.status-sub {
+  font-size: 13px;
+  color: var(--text-dim);
+  position: relative;
+  z-index: 1;
+}
+
+/* Metrics */
+.metrics-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.metric-card {
+  padding: 20px;
+  border-radius: 14px;
+  background: rgba(0,0,0,0.2);
+  border: 1px solid rgba(168, 85, 247, 0.1);
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.metric-card:hover {
+  border-color: rgba(168, 85, 247, 0.3);
+  background: rgba(168, 85, 247, 0.05);
+}
+
+.metric-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.metric-value {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.metric-fire { color: var(--warn); }
+.metric-motion { color: var(--accent-cyan); }
+
+/* Progress Bars */
+.progress-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.progress-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+
+.progress-label span:first-child {
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+}
+
+.progress-label span:last-child {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 13px;
+  color: var(--soft-purple);
+}
+
+.progress-track {
+  height: 6px;
+  background: rgba(0,0,0,0.4);
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid rgba(168, 85, 247, 0.1);
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  animation: shimmer 2s infinite;
+}
+
+.fill-fire {
+  background: linear-gradient(90deg, #f59e0b, #ef4444);
+}
+
+.fill-motion {
+  background: linear-gradient(90deg, #7c3aed, #22d3ee);
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Stats Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(168, 85, 247, 0.1);
+}
+
+.stat-box {
+  text-align: center;
+  padding: 16px 8px;
+  border-radius: 12px;
+  background: rgba(0,0,0,0.15);
+  transition: all 0.3s ease;
+}
+
+.stat-box:hover {
+  background: rgba(168, 85, 247, 0.08);
+}
+
+.stat-number {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--neon-purple);
+  display: block;
+}
+
+.stat-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 4px;
+  letter-spacing: 0.5px;
+}
+
+/* Activity Log */
+.activity-log {
+  max-height: 140px;
+  overflow-y: auto;
+  font-size: 12px;
+  background: rgba(0,0,0,0.2);
+  border-radius: 12px;
+  padding: 12px;
+  border: 1px solid rgba(168, 85, 247, 0.1);
+}
+
+.log-entry {
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  display: flex;
+  gap: 10px;
+  color: var(--text-dim);
+  align-items: center;
+}
+
+.log-entry:last-child { border-bottom: none; }
+
+.log-time {
+  color: var(--neon-purple);
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  min-width: 70px;
+}
+
+.log-icon {
+  font-size: 14px;
+}
+
+/* ─── FEATURES SECTION ─── */
+.features-section {
+  position: relative;
+  z-index: 5;
+  padding: 80px 40px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.feature-card {
+  padding: 32px;
+  text-align: center;
+}
+
+.feature-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(168,85,247,0.2), rgba(34,211,238,0.1));
+  border: 1px solid rgba(168, 85, 247, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  margin: 0 auto 20px;
+  transition: all 0.3s ease;
+}
+
+.feature-card:hover .feature-icon {
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: 0 0 30px rgba(168, 85, 247, 0.3);
+}
+
+.feature-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+  color: var(--lavender);
+}
+
+.feature-desc {
+  font-size: 14px;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+
+/* ─── SATELLITE ORBIT SECTION ─── */
+.orbit-section {
+  position: relative;
+  z-index: 5;
+  padding: 80px 40px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.orbit-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  align-items: center;
+}
+
+.orbit-visual {
+  position: relative;
+  height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.orbit-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(168, 85, 247, 0.2);
+}
+
+.orbit-ring-1 { width: 200px; height: 200px; animation: orbitSpin 20s linear infinite; }
+.orbit-ring-2 { width: 280px; height: 280px; animation: orbitSpin 30s linear infinite reverse; }
+.orbit-ring-3 { width: 360px; height: 360px; animation: orbitSpin 40s linear infinite; }
+
+@keyframes orbitSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.orbit-satellite {
+  position: absolute;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--accent-cyan);
+  box-shadow: 0 0 15px var(--accent-cyan);
+}
+
+.orbit-satellite.s1 { top: 0; left: 50%; transform: translateX(-50%); }
+.orbit-satellite.s2 { bottom: 0; left: 50%; transform: translateX(-50%); background: var(--neon-purple); box-shadow: 0 0 15px var(--neon-purple); }
+.orbit-satellite.s3 { top: 50%; right: 0; transform: translateY(-50%); background: var(--soft-purple); box-shadow: 0 0 15px var(--soft-purple); }
+
+.orbit-earth {
+  width: 100px; height: 100px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #4a2d7a, #1a0a2e);
+  box-shadow: 0 0 40px rgba(168, 85, 247, 0.3), inset -10px -10px 30px rgba(0,0,0,0.5);
+  position: relative;
+  z-index: 2;
+}
+
+.orbit-content h3 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  margin-bottom: 16px;
+  color: var(--lavender);
+}
+
+.orbit-content p {
+  color: var(--text-dim);
+  line-height: 1.8;
+  margin-bottom: 24px;
+}
+
+.orbit-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.orbit-stat {
+  padding: 20px;
+  border-radius: 14px;
+  background: rgba(0,0,0,0.2);
+  border: 1px solid rgba(168, 85, 247, 0.1);
+}
+
+.orbit-stat-value {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--neon-purple);
+}
+
+.orbit-stat-label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+  letter-spacing: 0.5px;
+}
+
+/* ─── FOOTER ─── */
+.footer {
+  position: relative;
+  z-index: 5;
+  padding: 60px 40px 40px;
+  border-top: 1px solid rgba(168, 85, 247, 0.1);
+  text-align: center;
+}
+
+.footer-logo {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  background: linear-gradient(135deg, var(--soft-purple), var(--neon-purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 12px;
+}
+
+.footer-tagline {
+  color: var(--text-dim);
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+.footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  margin-bottom: 32px;
+}
+
+.footer-links a {
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  letter-spacing: 1px;
+  transition: color 0.3s ease;
+}
+
+.footer-links a:hover {
+  color: var(--soft-purple);
+}
+
+.footer-copy {
+  color: rgba(167, 139, 250, 0.4);
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: var(--bright-purple); border-radius: 3px; }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 1100px) {
+  .dashboard-grid { grid-template-columns: 1fr; }
+  .features-grid { grid-template-columns: repeat(2, 1fr); }
+  .orbit-container { grid-template-columns: 1fr; }
+  .orbit-visual { order: -1; height: 300px; }
+}
+
+@media (max-width: 768px) {
+  .header { padding: 16px 20px; flex-direction: column; gap: 16px; }
+  .nav-links { flex-wrap: wrap; justify-content: center; }
+  .hero-title { font-size: 40px; letter-spacing: 4px; }
+  .hero-cta { flex-direction: column; align-items: center; }
+  .features-grid { grid-template-columns: 1fr; }
+  .dashboard-section, .features-section, .orbit-section { padding: 40px 20px; }
+  .metrics-row { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns: 1fr; }
+  .orbit-stats { grid-template-columns: 1fr; }
+}
+
+/* ─── ANIMATED ENTRANCE ─── */
+.reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ─── GLITCH EFFECT FOR TITLE ─── */
+.glitch {
+  position: relative;
+}
+
+.glitch::before,
+.glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+}
+
+.glitch::before {
+  animation: glitch-1 3s infinite linear alternate-reverse;
+  clip-path: polygon(0 0, 100% 0, 100% 35%, 0 35%);
+  color: var(--accent-cyan);
+}
+
+.glitch::after {
+  animation: glitch-2 2s infinite linear alternate-reverse;
+  clip-path: polygon(0 65%, 100% 65%, 100% 100%, 0 100%);
+  color: var(--neon-purple);
+}
+
+@keyframes glitch-1 {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-2px); }
+  40% { transform: translateX(2px); }
+  60% { transform: translateX(-1px); }
+  80% { transform: translateX(1px); }
+}
+
+@keyframes glitch-2 {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(2px); }
+  40% { transform: translateX(-2px); }
+  60% { transform: translateX(1px); }
+  80% { transform: translateX(-1px); }
+}
+
+/* ─── PARTICLE CANVAS ─── */
+#particles {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* ─── CONNECTION STATUS ─── */
+.connection-bar {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, var(--bright-purple), var(--accent-cyan), var(--neon-purple));
+  z-index: 100;
+  animation: connectionFlow 3s linear infinite;
+}
+
+@keyframes connectionFlow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+</style>
+</head>
+<body>
+
+<!-- Connection Status Bar -->
+<div class="connection-bar"></div>
+
+<!-- Scanlines Overlay -->
+<div class="scanlines"></div>
+
+<!-- Starfield Canvas -->
+<canvas id="starfield"></canvas>
+
+<!-- Particle Canvas -->
+<canvas id="particles"></canvas>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="logo-group">
+    <div class="logo-icon">🛰️</div>
+    <div class="logo-text">
+      <h1>ANOMALY ZERO</h1>
+      <div class="logo-sub">A Satellite Health Tracking Solution</div>
+    </div>
+  </div>
+  <nav class="nav-links">
+    <a href="#dashboard" class="nav-btn active">📊 Dashboard</a>
+    <a href="#features" class="nav-btn">⚡ Features</a>
+    <a href="#orbit" class="nav-btn">🌍 Orbit</a>
+    <a href="http://localhost:3000/" class="nav-btn">🔧 Engineering</a>
+    <a href="/home/redbith/Desktop/azercosmos/end-user.html" class="nav-btn">👤 End-User</a>
+  </nav>
+</header>
+
+<!-- HERO SECTION -->
+<section class="hero" id="hero">
+  <div class="hero-overlay"></div>
+
+  <div class="hero-content">
+    <div class="hero-badge">
+      <span class="dot"></span>
+      <span>Azərkosmos Competition 2026</span>
+    </div>
+
+    <h1 class="hero-title">
+      <span class="gradient-text glitch" data-text="ANOMALY ZERO">ANOMALY ZERO</span>
+    </h1>
+
+    <p class="hero-subtitle">Satellite Health Tracking Solution</p>
+
+    <p class="hero-desc">
+      Advanced anomaly detection and health monitoring for next-generation satellite constellations. 
+      Real-time telemetry, predictive analytics, and autonomous fault detection.
+    </p>
+
+    <div class="hero-cta">
+      <button class="btn-primary" onclick="document.getElementById('dashboard').scrollIntoView({behavior:'smooth'})">
+        🚀 Launch Dashboard
+      </button>
+      <button class="btn-secondary" onclick="document.getElementById('features').scrollIntoView({behavior:'smooth'})">
+        📖 Learn More
+      </button>
+    </div>
+  </div>
+
+  <div class="scroll-indicator">
+    <span>Scroll</span>
+    <div class="scroll-arrow"></div>
+  </div>
+</section>
+
+<!-- DASHBOARD SECTION -->
+<section class="dashboard-section" id="dashboard">
+  <div class="section-header reveal">
+    <div class="section-label">Live Monitoring</div>
+    <h2 class="section-title">
+      <span class="gradient-text">Mission Control</span>
+    </h2>
+    <p class="section-desc">Real-time satellite telemetry and anomaly detection dashboard</p>
+  </div>
+
+  <div class="dashboard-grid">
+    <!-- Video Feed Card -->
+    <div class="glass-card video-card reveal">
+      <div class="video-card-header">
+        <span class="video-card-title">📡 LIVE FEED</span>
+        <span class="video-badge">
+          <span class="live-dot"></span>
+          LIVE
+        </span>
+      </div>
+      <div class="video-container">
+        <video autoplay muted loop playsinline poster="https://images.pexels.com/photos/586031/pexels-photo-586031.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2">
+          <source src="https://videos.pexels.com/video-files/857195/857195-hd_1920_1080_25fps.mp4" type="video/mp4">
+        </video>
+        <div class="video-overlay">
+          <span class="video-info">🛰️ SAT-288 • LEO Orbit • 408km</span>
+          <span class="video-info" id="video-timestamp">UTC --:--:--</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Analytics Card -->
+    <div class="glass-card analytics-card reveal">
+      <div class="analytics-header">
+        <span class="analytics-title">🔍 ANALYTICS</span>
+        <span class="confidence-badge" id="confidence-badge">CONF: --%</span>
+      </div>
+
+      <!-- Status -->
+      <div class="status-box safe" id="status-box">
+        <div class="status-icon" id="status-icon">✅</div>
+        <div class="status-text" id="status-text">NOMINAL</div>
+        <div class="status-sub" id="status-sub">All systems operational</div>
+      </div>
+
+      <!-- Metrics -->
+      <div class="metrics-row">
+        <div class="metric-card">
+          <div class="metric-label">🔥 Thermal Load</div>
+          <div class="metric-value metric-fire" id="fire-ratio">0.0000</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">🌊 Motion Drift</div>
+          <div class="metric-value metric-motion" id="motion-ratio">0.0000</div>
+        </div>
+      </div>
+
+      <!-- Progress Bars -->
+      <div class="progress-section">
+        <div class="progress-item">
+          <div class="progress-label">
+            <span>Anomaly Risk</span>
+            <span id="risk-percent">0.0%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill fill-fire" id="risk-bar" style="width: 0%"></div>
+          </div>
+        </div>
+        <div class="progress-item">
+          <div class="progress-label">
+            <span>Orbit Stability</span>
+            <span id="motion-percent">0.0%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill fill-motion" id="motion-bar" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-box">
+          <span class="stat-number" id="stat-total">0</span>
+          <span class="stat-label">Checks</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-number" id="stat-fires">0</span>
+          <span class="stat-label">Anomalies</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-number" id="stat-avg">0%</span>
+          <span class="stat-label">Avg Confidence</span>
+        </div>
+      </div>
+
+      <!-- Activity Log -->
+      <div class="activity-log" id="activity-log">
+        <div class="log-entry">
+          <span class="log-time">--:--:--</span>
+          <span class="log-icon">🚀</span>
+          <span>System initialized...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES SECTION -->
+<section class="features-section" id="features">
+  <div class="section-header reveal">
+    <div class="section-label">Capabilities</div>
+    <h2 class="section-title">
+      <span class="gradient-text">Core Features</span>
+    </h2>
+    <p class="section-desc">Cutting-edge technology for satellite health management</p>
+  </div>
+
+  <div class="features-grid">
+    <div class="glass-card feature-card reveal">
+      <div class="feature-icon">🔥</div>
+      <h3 class="feature-title">Thermal Anomaly</h3>
+      <p class="feature-desc">AI-powered thermal imaging analysis to detect overheating components and fire risks in real-time.</p>
+    </div>
+
+    <div class="glass-card feature-card reveal">
+      <div class="feature-icon">🌊</div>
+      <h3 class="feature-title">Motion Tracking</h3>
+      <p class="feature-desc">Precise orbital drift detection and attitude monitoring with sub-millimeter accuracy.</p>
+    </div>
+
+    <div class="glass-card feature-card reveal">
+      <div class="feature-icon">⚡</div>
+      <h3 class="feature-title">Predictive AI</h3>
+      <p class="feature-desc">Machine learning models that predict failures 72 hours before they occur.</p>
+    </div>
+
+    <div class="glass-card feature-card reveal">
+      <div class="feature-icon">📡</div>
+      <h3 class="feature-title">Telemetry Hub</h3>
+      <p class="feature-desc">Centralized data ingestion from multiple satellite constellations with unified dashboards.</p>
+    </div>
+
+    <div class="glass-card feature-card reveal">
+      <div class="feature-icon">🔔</div>
+      <h3 class="feature-title">Smart Alerts</h3>
+      <p class="feature-desc">Intelligent notification system with severity classification and auto-escalation.</p>
+    </div>
+
+    <div class="glass-card feature-card reveal">
+      <div class="feature-icon">🛡️</div>
+      <h3 class="feature-title">Cyber Shield</h3>
+      <p class="feature-desc">End-to-end encryption and intrusion detection for satellite command links.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ORBIT SECTION -->
+<section class="orbit-section" id="orbit">
+  <div class="section-header reveal">
+    <div class="section-label">Constellation</div>
+    <h2 class="section-title">
+      <span class="gradient-text">Orbital Network</span>
+    </h2>
+    <p class="section-desc">Our satellite constellation coverage map</p>
+  </div>
+
+  <div class="orbit-container reveal">
+    <div class="orbit-visual">
+      <div class="orbit-ring orbit-ring-1">
+        <div class="orbit-satellite s1"></div>
+        <div class="orbit-satellite s2"></div>
+      </div>
+      <div class="orbit-ring orbit-ring-2">
+        <div class="orbit-satellite s3"></div>
+      </div>
+      <div class="orbit-ring orbit-ring-3"></div>
+      <div class="orbit-earth"></div>
+    </div>
+
+    <div class="orbit-content">
+      <h3>Global Coverage</h3>
+      <p>Our constellation of 24 satellites in Low Earth Orbit provides continuous monitoring coverage across the entire planet. Each satellite completes an orbit every 90 minutes, ensuring no region goes unwatched.</p>
+
+      <div class="orbit-stats">
+        <div class="orbit-stat">
+          <div class="orbit-stat-value">24</div>
+          <div class="orbit-stat-label">Active Satellites</div>
+        </div>
+        <div class="orbit-stat">
+          <div class="orbit-stat-value">408</div>
+          <div class="orbit-stat-label">km Altitude</div>
+        </div>
+        <div class="orbit-stat">
+          <div class="orbit-stat-value">90</div>
+          <div class="orbit-stat-label">min Orbit</div>
+        </div>
+        <div class="orbit-stat">
+          <div class="orbit-stat-value">99.9%</div>
+          <div class="orbit-stat-label">Uptime</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-logo">ANOMALY ZERO</div>
+  <div class="footer-tagline">A Satellite Health Tracking Solution</div>
+  <div class="footer-links">
+    <a href="#">Dashboard</a>
+    <a href="http://localhost:3000/">Engineering</a>
+    <a href="#">End-User</a>
+    <a href="#">Documentation</a>
+    <a href="#">Contact</a>
+  </div>
+  <div class="footer-copy">© 2026 Anomaly ZERO Team. Built for Azərkosmos Competition.</div>
+</footer>
+
+<script>
+// ─── STARFIELD ───
+const starCanvas = document.getElementById('starfield');
+const starCtx = starCanvas.getContext('2d');
+let stars = [];
+
+function resizeStarCanvas() {
+  starCanvas.width = window.innerWidth;
+  starCanvas.height = window.innerHeight;
+}
+resizeStarCanvas();
+window.addEventListener('resize', resizeStarCanvas);
+
+class Star {
+  constructor() {
+    this.reset();
+  }
+  reset() {
+    this.x = Math.random() * starCanvas.width;
+    this.y = Math.random() * starCanvas.height;
+    this.size = Math.random() * 2 + 0.5;
+    this.speed = Math.random() * 0.5 + 0.1;
+    this.opacity = Math.random();
+    this.fadeDir = Math.random() > 0.5 ? 0.01 : -0.01;
+  }
+  update() {
+    this.y += this.speed;
+    this.opacity += this.fadeDir;
+    if (this.opacity >= 1 || this.opacity <= 0.2) this.fadeDir *= -1;
+    if (this.y > starCanvas.height) this.reset();
+  }
+  draw() {
+    starCtx.beginPath();
+    starCtx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    starCtx.fillStyle = `rgba(200, 180, 255, ${this.opacity})`;
+    starCtx.fill();
+  }
+}
+
+for (let i = 0; i < 200; i++) stars.push(new Star());
+
+function animateStars() {
+  starCtx.clearRect(0, 0, starCanvas.width, starCanvas.height);
+  stars.forEach(star => { star.update(); star.draw(); });
+  requestAnimationFrame(animateStars);
+}
+animateStars();
+
+// ─── PARTICLES ───
+const pCanvas = document.getElementById('particles');
+const pCtx = pCanvas.getContext('2d');
+let particles = [];
+
+function resizePCanvas() {
+  pCanvas.width = window.innerWidth;
+  pCanvas.height = window.innerHeight;
+}
+resizePCanvas();
+window.addEventListener('resize', resizePCanvas);
+
+class Particle {
+  constructor() {
+    this.x = Math.random() * pCanvas.width;
+    this.y = Math.random() * pCanvas.height;
+    this.vx = (Math.random() - 0.5) * 0.5;
+    this.vy = (Math.random() - 0.5) * 0.5;
+    this.size = Math.random() * 3 + 1;
+    this.life = Math.random() * 100 + 50;
+    this.color = Math.random() > 0.5 ? '168, 85, 247' : '34, 211, 238';
+  }
+  update() {
+    this.x += this.vx;
+    this.y += this.vy;
+    this.life--;
+    if (this.life <= 0 || this.x < 0 || this.x > pCanvas.width || this.y < 0 || this.y > pCanvas.height) {
+      this.x = Math.random() * pCanvas.width;
+      this.y = Math.random() * pCanvas.height;
+      this.life = Math.random() * 100 + 50;
+    }
+  }
+  draw() {
+    pCtx.beginPath();
+    pCtx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    pCtx.fillStyle = `rgba(${this.color}, ${this.life / 150})`;
+    pCtx.fill();
+  }
+}
+
+for (let i = 0; i < 50; i++) particles.push(new Particle());
+
+function animateParticles() {
+  pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+  particles.forEach(p => { p.update(); p.draw(); });
+  requestAnimationFrame(animateParticles);
+}
+animateParticles();
+
+// ─── SCROLL REVEAL ───
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// ─── DASHBOARD DATA SIMULATION ───
+let lastFireRatio = 0;
+let lastMotionRatio = 0;
+let checkCount = 0;
+let fireCount = 0;
+let totalConfidence = 0;
+
+function formatTime() {
+  const now = new Date();
+  return now.toLocaleTimeString('en-GB', { hour12: false });
+}
+
+function formatUTC() {
+  const now = new Date();
+  return now.toISOString().split('T')[1].split('.')[0];
+}
+
+function addLog(message, type = 'info') {
+  const log = document.getElementById('activity-log');
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  const icons = { fire: '🔥', safe: '✅', info: '📡', warn: '⚠️' };
+  entry.innerHTML = `<span class="log-time">${formatTime()}</span><span class="log-icon">${icons[type] || icons.info}</span><span>${message}</span>`;
+  log.insertBefore(entry, log.firstChild);
+  while (log.children.length > 8) log.removeChild(log.lastChild);
+}
+
+function updateRiskBars(fireRatio, motionRatio) {
+  const firePercent = Math.min(100, fireRatio * 10000).toFixed(1);
+  const motionPercent = Math.min(100, motionRatio * 10000).toFixed(1);
+  document.getElementById('risk-bar').style.width = firePercent + '%';
+  document.getElementById('risk-percent').textContent = firePercent + '%';
+  document.getElementById('motion-bar').style.width = motionPercent + '%';
+  document.getElementById('motion-percent').textContent = motionPercent + '%';
+}
+
+function updateDashboard() {
+  checkCount++;
+
+  // Simulate data
+  const fireRatio = Math.random() * 0.002;
+  const motionRatio = Math.random() * 0.0015;
+  const confidence = Math.random() * 30 + 70;
+  const isFire = Math.random() > 0.92;
+
+  lastFireRatio = fireRatio;
+  lastMotionRatio = motionRatio;
+
+  document.getElementById('fire-ratio').textContent = fireRatio.toFixed(4);
+  document.getElementById('motion-ratio').textContent = motionRatio.toFixed(4);
+  document.getElementById('confidence-badge').textContent = `CONF: ${confidence.toFixed(1)}%`;
+  document.getElementById('video-timestamp').textContent = 'UTC ' + formatUTC();
+
+  updateRiskBars(fireRatio, motionRatio);
+
+  const statusBox = document.getElementById('status-box');
+  const statusIcon = document.getElementById('status-icon');
+  const statusText = document.getElementById('status-text');
+  const statusSub = document.getElementById('status-sub');
+
+  if (isFire) {
+    statusBox.className = 'status-box fire';
+    statusIcon.textContent = '🔥🔥';
+    statusText.textContent = 'ANOMALY DETECTED';
+    statusSub.textContent = `Critical thermal event! Confidence: ${confidence.toFixed(1)}%`;
+    fireCount++;
+    totalConfidence += confidence;
+    addLog(`ANOMALY! Thermal spike detected (Conf: ${confidence.toFixed(1)}%)`, 'fire');
+  } else {
+    statusBox.className = 'status-box safe';
+    statusIcon.textContent = '✅';
+    statusText.textContent = 'NOMINAL';
+    statusSub.textContent = `Thermal: ${fireRatio.toFixed(4)}, Motion: ${motionRatio.toFixed(4)}`;
+    if (checkCount > 1) addLog(`Nominal check passed (Thermal: ${fireRatio.toFixed(4)})`, 'safe');
+  }
+
+  document.getElementById('stat-total').textContent = checkCount;
+  document.getElementById('stat-fires').textContent = fireCount;
+  document.getElementById('stat-avg').textContent = fireCount > 0 ? (totalConfidence / fireCount).toFixed(0) + '%' : '0%';
+}
+
+addLog('System initialized and ready');
+addLog('Satellite link established');
+addLog('Telemetry stream active');
+setInterval(updateDashboard, 3000);
+updateDashboard();
+
+// ─── SMOOTH SCROLL FOR NAV ───
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+  anchor.addEventListener('click', function(e) {
+    e.preventDefault();
+    const target = document.querySelector(this.getAttribute('href'));
+    if (target) target.scrollIntoView({ behavior: 'smooth' });
+  });
+});
+
+// ─── ACTIVE NAV HIGHLIGHT ───
+const sections = document.querySelectorAll('section[id]');
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(section => {
+    const sectionTop = section.offsetTop;
+    if (scrollY >= sectionTop - 200) current = section.getAttribute('id');
+  });
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.classList.remove('active');
+    if (btn.getAttribute('href') === '#' + current) btn.classList.add('active');
+  });
+});
+</script>
+
+</body>
+</html>
